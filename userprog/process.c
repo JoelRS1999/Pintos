@@ -21,17 +21,6 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
- void test_stack(int *t)
-{ int i;
-int argc = t[1];
-char ** argv;
-argv = (char **) t[2];
-printf("ARGC:%d ARGV:%x\n", argc, (unsigned int)argv);
-for (i = 0; i < argc; i++)
-printf("Argv[%d] = %x pointing at %s\n",
-i, (unsigned int)argv[i], argv[i]);
-}
-
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -42,7 +31,6 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -70,7 +58,6 @@ start_process (void *file_name_)
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -82,6 +69,7 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
+   
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -104,7 +92,13 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  while(1)  ;
+  int i;
+  // 
+  //thread_yield();
+  for (i = 0; i < (1<<10); ++i)
+  {
+    thread_yield();
+  }
   return -1;
 }
 
@@ -114,6 +108,8 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  printf ("%s: exit(%d)\n", cur->name, cur->ret_status);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -237,7 +233,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-  
   /* Open executable file. */
   char * fn_cp = malloc (strlen(file_name)+1);
   strlcpy(fn_cp, file_name, strlen(file_name)+1);
@@ -329,8 +324,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp,file_name))
     goto done;
-
-  test_stack(*esp);
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -542,5 +535,3 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
-
-

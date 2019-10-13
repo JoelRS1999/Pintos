@@ -98,6 +98,7 @@ struct thread
     struct list_elem elem;              /* List element. */
     struct list locks_acquired;         /*All locks acquired currently by the thread*/
     struct lock *lock_seeking;               /* the lock, thread is seeking*/
+    int ret_status;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
