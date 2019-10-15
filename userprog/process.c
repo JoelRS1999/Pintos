@@ -110,6 +110,17 @@ process_exit (void)
   uint32_t *pd;
 
   printf ("%s: exit(%d)\n", cur->name, cur->ret_status);
+  while (!list_empty (&cur->wait.waiters))
+    sema_up (&cur->wait);
+  file_close (cur->self);
+  cur->self = NULL;
+  cur->exited = true;
+  if (cur->parent)
+    {
+      intr_disable ();
+      thread_block ();
+      intr_enable ();
+    }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

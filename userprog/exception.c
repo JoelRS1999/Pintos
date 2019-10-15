@@ -124,6 +124,7 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
+  struct thread *t;
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -147,10 +148,13 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
   /* We should not panic when user space code is violating memory access*/
-  if ((not_present || !is_user_vaddr (fault_addr) || fault_addr == NULL) && user)
-  {
-    sys_exit(-1);
-  }
+  //if ((not_present || !is_user_vaddr (fault_addr) || fault_addr == NULL) && user)
+  //{
+  //  sys_exit(-1);
+  //}
+  t = thread_current ();
+  if (not_present || (is_kernel_vaddr (fault_addr) && user))
+    sys_exit (-1);
   
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
