@@ -15,7 +15,7 @@
 #include "fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
-#include<list.h>
+#include <list.h>
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -293,12 +293,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  intr_set_level (old_level);
-  /* Add to run queue. */
-  thread_unblock (t);
-
-  thread_check_prio();
-  #ifdef USERPROG
+#ifdef USERPROG
   sema_init (&t->wait, 0);
   t->ret_status = RET_STATUS_DEFAULT;
   list_init (&t->files);
@@ -307,7 +302,14 @@ thread_create (const char *name, int priority,
     list_push_back (&thread_current ()->children, &t->children_elem);
   t->parent = thread_current ();
   t->exited = false;
-  #endif
+#endif
+
+  intr_set_level (old_level);
+  /* Add to run queue. */
+  thread_unblock (t);
+
+  thread_check_prio();
+
 
   return tid;
 }
@@ -391,9 +393,10 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
-    struct list_elem *l;
-  struct thread *t, *cur;
 
+  struct list_elem *l;
+  struct thread *t, *cur;
+  
   cur = thread_current ();
 
   for (l = list_begin (&cur->children); l != list_end (&cur->children); l = list_next (l))
@@ -406,15 +409,16 @@ thread_exit (void)
           t->parent = NULL;
           list_remove (&t->children_elem);
         }
-
+        
     }
 
-
   process_exit ();
+
   ASSERT (list_size (&cur->files) == 0);
 
   if (cur->parent && cur->parent != initial_thread)
     list_remove (&cur->children_elem);
+  
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
@@ -1039,4 +1043,22 @@ managerial_thread_work2(void *AUX)
     intr_set_level(old_level);
 
   }
+}
+
+struct thread *
+get_thread_by_tid (tid_t tid)
+{
+  struct list_elem *rohan;
+  struct thread *ret;
+  
+  ret = NULL;
+  for (rohan = list_begin (&all_list); rohan != list_end (&all_list); rohan = list_next (rohan))
+    {
+      ret = list_entry (rohan, struct thread, allelem);
+      ASSERT (is_thread (ret));
+      if (ret->tid == tid)
+        return ret;
+    }
+    
+  return NULL;
 }

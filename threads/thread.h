@@ -164,6 +164,7 @@ void set_next_wakeup(void);
 void thread_check_prio(void);
 void thread_wakeup (int64_t);
 void update_ready_list(void);
+struct thread *get_thread_by_tid(tid_t tid);
 
 
 void thread_add_lock (struct lock *);
